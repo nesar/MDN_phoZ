@@ -1,5 +1,8 @@
-Tested on python 3.7
-Packages: tensorflow 2.3.1, scikit-learn==0.21.3
+## Jupyter notebook with a trained photometric redshift estimator
 
-pip3 install tensorflow==2.3.1
-pip3 install scikit-learn==0.21.3
+Tested on Python 3.7
+
+Packages: 
+
+1. tensorflow 2.3.1 (pip3 install tensorflow==2.3.1)
+2. scikit-learn==0.21.3 (pip3 install scikit-learn==0.21.3)
