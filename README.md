@@ -1,6 +1,6 @@
 ## Jupyter notebook with a trained photometric redshift estimator
 
-Tested on Python 3.7
+Tested on Python 3.7, Tensorflow 2.3
 
 Packages: 
 
