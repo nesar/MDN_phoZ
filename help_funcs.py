@@ -58,7 +58,7 @@ def perturb(X_test, band_n = None, delta_c = 1.1, approach = 'a', X_err = None):
 
 def prediction_zp(xdata, xzero, model_train, preproc, preproc_y, galID = None):
     f_real = xdata.copy()
-    f_real[:,:4] = f_real[:,:4] + xzero # So fifth band (magnitude) doesn't get changed, but it should still be there...
+    f_real[:,:4] = f_real[:,:4] + xzero # So fifth band (magnitude) doesn't get changed, but it should still be there... # This is not vectorized addition
     if galID is None:
         f_real = preproc.transform(f_real)
         y_pred = np.array(model_train(f_real)) # y_pred is straight up the outputs of training the model on this data
@@ -78,7 +78,22 @@ def prediction_zp_all(X_test, label_test, save_mod, surveystring, model_train, p
     xzero[label_test == 1] = np.loadtxt(save_mod + '_xzero_' + surveystring[1])
     xzero[label_test == 2] = np.loadtxt(save_mod + '_xzero_' + surveystring[2])
     photoz, photoz_err = prediction_zp(X_test, xzero, model_train, preproc, preproc_y)
-    return photoz, photoz_err
+    return photoz, photoz_err, xzero
+
+def Nesar_prediction_zp_all(X_test, label_test, save_mod, surveystring, model_train, preproc, preproc_y):
+    xzero = np.zeros_like(X_test[:,:4])
+    xzero[label_test == 0] = np.loadtxt(save_mod + '_xzero_' + surveystring[0])
+    xzero[label_test == 1] = np.loadtxt(save_mod + '_xzero_' + surveystring[1])
+    xzero[label_test == 2] = np.loadtxt(save_mod + '_xzero_' + surveystring[2])  
+    f_real = X_test.copy()
+    f_real[:,:4] = f_real[:,:4] + xzero
+    f_real = preproc.transform(f_real)
+    y_pred = np.array(model_train(f_real))
+    y_pred_3means = preproc_y.inverse_transform(y_pred[0, :, :])
+    y_pred_3std = preproc_y.inverse_transform( np.sqrt(np.log(y_pred[1, :, :])  ))
+    y_pred_3weights = y_pred[2, :, :]
+    predstdweights = np.array([y_pred_3means, y_pred_3std, y_pred_3weights])
+    return y_pred_3means, y_pred_3std, y_pred_3weights, xzero
 
 def old_predict(X_test, preproc, model_train):
     X_test = preproc.transform(X_test)
