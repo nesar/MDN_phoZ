@@ -253,7 +253,8 @@ def run_zp_chain(
     cutoff = 5., 
     extra_cov = 9.,
     step_size = 0.005,
-    zgrid = None
+    zgrid = None,
+    D = 5
 ):
     """Function that runs an MCMC over the zero-point space. Runs a Metropolis-Hastings walk 
     with a Gaussian as the proposal distribution. With zeropoints aka 'zp' and some data:
@@ -324,6 +325,7 @@ def run_zp_chain(
         ztrue_arg = None
     
     n_params = f.shape[1] - 1
+    print(f.shape)
     if params_init is None:
         params_init = np.zeros(n_params)
     
@@ -333,7 +335,7 @@ def run_zp_chain(
     # Initial step
     params = params_init.copy()
     xdata = f.copy()
-    xdata[:,:4] = xdata[:,:4] + params
+    xdata[:,:D-1] = xdata[:,:D-1] + params
     t0 = time.time()
     loglike = _likelihood_wrapper(preproc, preproc_y, model_train, ztrue, xdata, fe, Nintegral, 
                                  method, cutoff, zgrid, ztrue_arg)
@@ -348,7 +350,7 @@ def run_zp_chain(
         params = chain[i] + np.random.normal(0, step_size, n_params)
 
         xdata = f.copy()
-        xdata[:,:4] = xdata[:,:4] + params
+        xdata[:,:D-1] = xdata[:,:D-1] + params
         t0 = time.time()
         loglike = _likelihood_wrapper(preproc, preproc_y, model_train, ztrue, xdata, fe, Nintegral, 
                                      method, cutoff, zgrid, ztrue_arg)

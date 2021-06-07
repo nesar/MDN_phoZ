@@ -1,0 +1,32 @@
+Namespace(K=3, batch_size=256, decay_rate=0.01, learning_rate=0.0001, n_epochs=20, nbins=200, num_test=20000, num_train=200000, prtb=False, resampleTrain=False, rm_band=False, select_per_bin=400, sim='sdss')
+Training on sim:  sdss
+X training data shape:  (2400000, 5)
+y training data shape:  (2400000,)
+----------
+number of datapoints:  2400000
+z-minmax:  0.015516835317270949 1.4953407654942283
+ColMag-min:  [-0.17  -0.183 -0.15  -0.106 10.634]
+ColMag-max:  [ 2.783  2.433  1.684  1.168 34.425]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.015516835317270949 1.4953407654942283
+ColMag-min:  [-0.169 -0.182 -0.15  -0.106 10.634]
+ColMag-max:  [ 2.783  2.432  1.684  1.168 34.425]
+----------
+Size of features in training data: (1200000, 5)
+Size of output in training data: (1200000,)
+Size of features in test data: (1200000, 5)
+Size of output in test data: (1200000,)
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.415 -1.867 -2.317 -2.137 -3.85 ]
+ColMag-max:  [4.148 3.738 4.424 2.817 4.355]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.414 -1.866 -2.317 -2.137 -3.85 ]
+ColMag-max:  [4.148 3.737 4.429 2.817 4.355]
+----------

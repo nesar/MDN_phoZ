@@ -1,0 +1,32 @@
+Namespace(K=3, batch_size=256, decay_rate=0.01, learning_rate=0.0001, n_epochs=20, nbins=200, num_test=20000, num_train=200000, prtb=False, resampleTrain=False, rm_band=False, select_per_bin=400, sim='lsst')
+Training on sim:  lsst
+X training data shape:  (2400000, 6)
+y training data shape:  (2400000,)
+----------
+number of datapoints:  2400000
+z-minmax:  0.04873446602157439 1.4241888290012907
+ColMag-min:  [-0.165 -0.164 -0.152 -0.1   -0.081 13.094]
+ColMag-max:  [ 2.834  2.26   1.679  1.023  0.943 34.313]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.04873446602157439 1.4241888290012907
+ColMag-min:  [-0.165 -0.163 -0.152 -0.1   -0.081 13.094]
+ColMag-max:  [ 2.834  2.26   1.676  1.023  0.943 34.313]
+----------
+Size of features in training data: (1200000, 6)
+Size of output in training data: (1200000,)
+Size of features in test data: (1200000, 6)
+Size of output in test data: (1200000,)
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.417 -1.709 -2.134 -2.164 -1.769 -3.264]
+ColMag-max:  [4.463 3.829 4.163 3.315 3.499 4.36 ]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.416 -1.707 -2.134 -2.164 -1.769 -3.264]
+ColMag-max:  [4.463 3.83  4.151 3.318 3.5   4.36 ]
+----------

@@ -1,0 +1,32 @@
+Namespace(K=3, batch_size=256, decay_rate=0.01, learning_rate=0.0001, n_epochs=20, nbins=200, num_test=20000, num_train=200000, prtb=False, resampleTrain=False, rm_band=False, select_per_bin=400, sim='irac')
+Training on sim:  irac
+X training data shape:  (2400000, 4)
+y training data shape:  (2400000,)
+----------
+number of datapoints:  2400000
+z-minmax:  0.058134887902522275 1.456903512148539
+ColMag-min:  [-0.49  -0.608 -0.722 14.769]
+ColMag-max:  [ 0.077 -0.18  -0.276 34.67 ]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.058134887902522275 1.456903512148539
+ColMag-min:  [-0.49  -0.608 -0.722 14.769]
+ColMag-max:  [ 0.077 -0.18  -0.276 34.67 ]
+----------
+Size of features in training data: (1200000, 4)
+Size of output in training data: (1200000,)
+Size of features in test data: (1200000, 4)
+Size of output in test data: (1200000,)
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.823 -1.975 -2.852 -2.656]
+ColMag-max:  [2.549 2.586 2.702 4.728]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-1.823 -1.975 -2.852 -2.656]
+ColMag-max:  [2.557 2.593 2.703 4.728]
+----------

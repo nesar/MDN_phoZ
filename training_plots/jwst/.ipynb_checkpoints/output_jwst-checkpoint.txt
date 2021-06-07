@@ -1,0 +1,32 @@
+Namespace(K=3, batch_size=256, decay_rate=0.01, learning_rate=0.0001, n_epochs=20, nbins=200, num_test=20000, num_train=200000, prtb=False, resampleTrain=False, rm_band=False, select_per_bin=400, sim='jwst')
+Training on sim:  jwst
+X training data shape:  (2400000, 8)
+y training data shape:  (2400000,)
+----------
+number of datapoints:  2400000
+z-minmax:  0.09325134901961846 1.4516589408085523
+ColMag-min:  [-0.176 -0.139 -0.176 -0.165 -0.573 -0.513 -0.448 13.634]
+ColMag-max:  [ 1.555  1.233  0.636  0.511  0.392  0.206  0.078 33.603]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.09325134901961846 1.4516589408085523
+ColMag-min:  [-0.174 -0.139 -0.176 -0.163 -0.573 -0.513 -0.448 13.634]
+ColMag-max:  [ 1.555  1.233  0.636  0.511  0.392  0.206  0.078 33.603]
+----------
+Size of features in training data: (1200000, 8)
+Size of output in training data: (1200000,)
+Size of features in test data: (1200000, 8)
+Size of output in test data: (1200000,)
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-2.707 -2.791 -3.576 -3.413 -3.711 -1.749 -1.758 -3.085]
+ColMag-max:  [2.872 5.019 3.449 3.282 2.141 1.547 2.777 4.923]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 1.0
+ColMag-min:  [-2.699 -2.79  -3.577 -3.396 -3.711 -1.749 -1.758 -3.085]
+ColMag-max:  [2.872 5.019 3.454 3.296 2.145 1.549 2.773 4.923]
+----------

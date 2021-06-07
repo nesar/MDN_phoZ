@@ -1,0 +1,32 @@
+Namespace(K=3, batch_size=256, decay_rate=0.01, learning_rate=0.0001, n_epochs=20, nbins=200, num_test=20000, num_train=200000, prtb=False, resampleTrain=False, rm_band=False, select_per_bin=400, sim='des')
+Training on sim:  des
+X training data shape:  (2400000, 5)
+y training data shape:  (2400000,)
+----------
+number of datapoints:  2400000
+z-minmax:  0.036604965948618035 1.4635268171658191
+ColMag-min:  [-0.188 -0.264 -0.169 -0.086 12.091]
+ColMag-max:  [ 2.409  1.589  1.091  0.633 34.098]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.036604965948618035 1.4635268171658191
+ColMag-min:  [-0.188 -0.262 -0.167 -0.085 12.091]
+ColMag-max:  [ 2.409  1.585  1.09   0.633 34.098]
+----------
+Size of features in training data: (1200000, 5)
+Size of output in training data: (1200000,)
+Size of features in test data: (1200000, 5)
+Size of output in test data: (1200000,)
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 0.9999999999999999
+ColMag-min:  [-1.836 -2.735 -2.619 -2.034 -3.103]
+ColMag-max:  [4.134 4.01  3.134 3.775 4.16 ]
+----------
+----------
+number of datapoints:  1200000
+z-minmax:  0.0 0.9999999999999999
+ColMag-min:  [-1.837 -2.727 -2.611 -2.027 -3.103]
+ColMag-max:  [4.133 3.997 3.131 3.77  4.16 ]
+----------

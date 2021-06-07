@@ -24,21 +24,34 @@ np.random.seed(12211)
 def minmax_cuts(X, y, mins_and_maxs):
     
     min_col, max_col, min_mag, max_mag, min_z, max_z = mins_and_maxs
+    print(min_col, max_col)
     mask_cond =  np.where( 
-        (X[:, 0] < max_col) & (X[:, 0] > min_col) &
-        (X[:, 1] < max_col) & (X[:, 1] > min_col) &
-        (X[:, 2] < max_col) & (X[:, 2] > min_col) &
-        (X[:, 3] < max_col) & (X[:, 3] > min_col) &
+        (X[:, 0] < max_col[0]) & (X[:, 0] > min_col[0]) &
+        (X[:, 1] < max_col[1]) & (X[:, 1] > min_col[1]) &
+        (X[:, 2] < max_col[2]) & (X[:, 2] > min_col[2]) &
+        (X[:, 3] < max_col[3]) & (X[:, 3] > min_col[3]) &
         (X[:, 4] < max_mag) & (X[:, 4] > min_mag) &
         (y < max_z) & (y > min_z) )
+    # Why was it this way before?
+        #(X[:, 0] < max_col) & (X[:, 0] > min_col) &
+        #(X[:, 1] < max_col) & (X[:, 1] > min_col) &
+        #(X[:, 2] < max_col) & (X[:, 2] > min_col) &
+        #(X[:, 3] < max_col) & (X[:, 3] > min_col) &
+        #(X[:, 4] < max_mag) & (X[:, 4] > min_mag) &
+        #(y < max_z) & (y > min_z) )
     
     X_new = X[mask_cond]
     y_new = y[mask_cond]
     return X_new, y_new, mask_cond
 
-def minmax_cutsOBSarr(X, y, l, mins_and_maxs): # Same, with labels
+def minmax_cutsOBSarr(X, X_err, y, l, mins_and_maxs): # Same, with labels
     
     min_col, max_col, min_mag, max_mag, min_z, max_z = mins_and_maxs
+    print(min_col)
+    print(min_col[0])
+    print(X.shape)
+    print(X[:,0].shape)
+    print((X[:, 0] < max_col[0]).shape)
     mask_cond =  np.where( 
         (X[:, 0] < max_col[0]) & (X[:, 0] > min_col[0]) &
         (X[:, 1] < max_col[1]) & (X[:, 1] > min_col[1]) &
@@ -51,7 +64,8 @@ def minmax_cutsOBSarr(X, y, l, mins_and_maxs): # Same, with labels
     X_new = X[mask_cond]
     y_new = y[mask_cond]
     l_new = l[mask_cond]
-    return X_new, y_new, l_new, mask_cond
+    X_err_new = X_err[mask_cond]
+    return X_new, y_new, l_new, mask_cond, X_err_new
 
 ################
 # Print limits #
@@ -90,7 +104,7 @@ def shuffleOBS(X, y, l): # Same, with labels
 
 # Training data is biased towards lower redshift values -- resampling fixes that issue
 
-def resample(X, y, n_bins = 200, select_per_bin = 500): # 50 #np.int(num_train/n_bins) #100 # This was an alternative way to control num_train. Without num train requisites, it will jsut go through the whole training set
+def resample(X, y, n_bins = 200, select_per_bin = 500): # 50 #np.int(num_train/n_bins) #100 # This was an alternative way to control num_train. Without num train requisites, it will just go through the whole training set
 
     bins = np.linspace(y.min(), y.max(), n_bins)
     # bins = np.logspace(np.log10(y_test.min()+1e-2), np.log10(y_test.max()+1e-2), n_bins)
@@ -109,6 +123,7 @@ def resample(X, y, n_bins = 200, select_per_bin = 500): # 50 #np.int(num_train/n
     # resampled_ind_not = ~np.in1d(np.arange(all_ind.shape[-1]), resampled_ind)
 
     plt.figure(23)
+    print(y)
     plt.hist(y, density=True, bins = n_bins, histtype='step', label='original')
     y_resampled = y[resampled_ind]
     X_resampled = X[resampled_ind]
@@ -117,6 +132,7 @@ def resample(X, y, n_bins = 200, select_per_bin = 500): # 50 #np.int(num_train/n
     #plt.hist(y_train, density=True, bins = n_bins, histtype='step', label='rest') # For us, "y_train" and "y" are the same
     
     plt.legend()
+    plt.savefig("training_plots/resampled.png")
     plt.show()
 
     print(y_resampled.shape)
@@ -132,7 +148,8 @@ def loadTrainTest_july(dirIn = '../../Data/fromGalaxev/photozs/datasets/data_jul
     # train_data = np.load(dirIn + 'july13_100k.npy')
     train_data = np.load(dirIn + 'july14_200k.npy') # load in the training data
     test_data = np.load(dirIn + 'july13_10k.npy')   # load in the test data
-    
+    #print(train_data)
+    #print(test_data)
     
     X_train = train_data['color']#[train_data['redshift_flags'] == 0] # Specifically, draw out the colors (inputs) and redshifts (outputs) of the training data
     y_train = train_data['redshift']#[train_data['redshift_flags'] == 0]
@@ -147,6 +164,71 @@ def loadTrainTest_july(dirIn = '../../Data/fromGalaxev/photozs/datasets/data_jul
     print_limits(X_test, y_test)
 
     return X_train, y_train, X_test, y_test
+
+def loadTrainTest_custom(Testset, sim = 'des', train_dirIn = '/data/a/cpac/nramachandra/Projects/phoZ/Synthetic_Data/fsps_wrapper/notebooks/out/', frac_train = 0.9):
+
+    print("Training on sim: ", sim)
+    
+    # Load in (raw) training data, reshape
+    col_mag = np.load(train_dirIn + 'col_mag_' + sim + '_0.npy')
+    nprop, ngal, nz, ncol = col_mag.shape
+    fsps_reshaped = col_mag.reshape(-1, nz, ncol) # Keep the last two dimensions, crush the others
+    fsps_reshaped = fsps_reshaped.reshape(-1, ncol) # And then crush the remaining one?
+    
+    zz_all = np.load(train_dirIn + 'zz_'+ sim +'.npy')
+    ngal, nprop, nz = zz_all.shape
+    zz_all_reshaped = zz_all.reshape(-1, nz)
+    zz_all_reshaped = zz_all_reshaped.reshape(-1)
+    
+    print("X training data shape: ", fsps_reshaped.shape)
+    print("y training data shape: ", zz_all_reshaped.shape)
+    
+    # Randomly sample 90% and 10% for training and testing
+    sample_size = fsps_reshaped.shape[0] # first dimension
+    train_n = int(frac_train*sample_size) # note: rounds down
+    np.random.seed(0)
+    full_idx = np.arange(sample_size)
+    training_idx = np.random.choice(full_idx, train_n, replace = False)
+    X_train = fsps_reshaped[training_idx]
+    y_train = zz_all_reshaped[training_idx]
+    X_test = fsps_reshaped[full_idx[~np.isin(full_idx, training_idx)]]
+    y_test = zz_all_reshaped[full_idx[~np.isin(full_idx, training_idx)]]
+    
+    #X_err = np.load(test_dirIn + 'test_' + Testset +'_err.npy')
+    #test_labels = np.load(test_dirIn + 'test_' + Testset + '_label.npy')
+    
+    print_limits(fsps_reshaped, zz_all_reshaped)
+    print_limits(X_test, y_test)
+
+    return X_train, y_train, X_test, y_test#, X_err, test_labels
+
+
+def loadTrainTest_custom_future_ed(Testset, sim = 'des', train_dirIn = '/data/a/cpac/nramachandra/Projects/phoZ/Synthetic_Data/Data/', test_dirIn = '/data/a/cpac/aurora/MDN_phoZ/Data/fromGalaxev/photozs/datasets/data_feb_2021/'):
+
+    # train_data = np.load(dirIn + 'july13_100k.npy')
+    #X_train = np.load(train_dirIn + sim + '_col_mag.npy') # load in the training data
+    #y_train = np.load(train_dirIn + sim + '_z.npy')
+    X_train = np.load(train_dirIn + sim + '_col_mag.npy') # load in the training data
+    y_train = np.load(train_dirIn + sim + '_z.npy')
+    test_data = np.load(test_dirIn + 'test_' + Testset + '.npy')   # load in the test data
+    
+    # For now, use 10% of X data for testing
+    test_data = np.load(test_dirIn + 'test_' + Testset + '.npy')   # load in the test data
+    print("Training on sim: ", sim)
+    print("X training data shape: ", X_train.shape)
+    print("y training data shape: ", y_train.shape)
+
+    X_test = test_data[: , :-1]
+    y_test = test_data[: , -1]
+    
+    X_err = np.load(test_dirIn + 'test_' + Testset +'_err.npy')
+    test_labels = np.load(test_dirIn + 'test_' + Testset + '_label.npy')
+    
+    print_limits(X_train, y_train)
+    print_limits(X_test, y_test)
+
+    return X_train, y_train, X_test, y_test, X_err, test_labels
+    
 
 # Not clear why these are separate?
 def loadTest(Testset, dirIn = '../../Data/fromGalaxev/photozs/datasets/data_feb_2021/'):
@@ -167,8 +249,26 @@ def loadTest(Testset, dirIn = '../../Data/fromGalaxev/photozs/datasets/data_feb_
 # Decay #
 #########
 
-def decay(epoch): # Oh hey I vaguely remember this!
+def decay(epoch, decay_rate, learning_rate): # Oh hey I vaguely remember this!
     if (epoch < 1):
         return learning_rate
     else:
         return learning_rate*(1.0/(1.0+decay_rate*(epoch)))
+    
+##############
+# Prediction #
+##############
+
+def prediction(X_test, save_mod, surveystring, model_train, preproc, preproc_y):
+    f_real = X_test.copy()
+    f_real[:,:4] = f_real[:,:4]
+    f_real = preproc.transform(f_real)
+    y_pred = np.array(model_train(  [f_real, np.zeros(shape = f_real.shape[0]) ] ))
+    y_pred_arg = np.argmax(y_pred[2, :, :], axis = 1)
+    y_pred_mean = y_pred[0, :, :][:, y_pred_arg][:, 0]
+    y_pred_std = np.sqrt(np.log(y_pred[1, :, :][:, y_pred_arg][:, 0]))
+    y_pred_3means = preproc_y.inverse_transform(y_pred[0, :, :]) # pretty sure this is the same as y_pred_std.reshape(-1, 1)[:, 0]??
+    y_pred_3std = preproc_y.inverse_transform( np.sqrt(np.log(y_pred[1, :, :])  ))
+    y_pred_3weights = y_pred[2, :, :]
+    predstdweights = np.array([y_pred_3means, y_pred_3std, y_pred_3weights]) # Should I be returning this?    
+    return y_pred_3means, y_pred_3std, y_pred_3weights, y_pred_arg, y_pred_mean, y_pred_std # photo_z, photo_z_err

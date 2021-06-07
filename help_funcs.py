@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import tensorflow as tf
 from tensorflow.keras.models import Model
 import SetPub
+from scipy import stats
 SetPub.set_pub()
 np.random.seed(12211) 
 
@@ -48,6 +49,8 @@ def perturb(X_test, band_n = None, delta_c = 1.1, approach = 'a', X_err = None):
             for j in range(len(X_test[0])): # for each color
                 cov[j,j] = X_err[i][j]
             prtb_X_test[i] = np.random.multivariate_normal(mu[i], cov, 1)
+    elif approach == 'e':
+        prtb_X_test = np.delete(prtb_X_test, band_n, axis = 1)
         
     # Quantify the results (i.e. mean squared error) -- Nesar will send some things
     return prtb_X_test
@@ -193,6 +196,25 @@ def outlierFrac(z_spec, z_pho, threshold = 0.15):
     outliers = z_pho[ (np.abs(z_spec - z_pho)) >= threshold*z_spec ]
     return 100.0*len(outliers)/np.shape(z_pho)[0]
 
+def validate(z_spec, z_pho): # choose whether to offer a perturbed or original dataset
+
+    bins = np.linspace(0, 1.5, 15) # what's with these bins? And why are we assuming z_spec and z_pho have multiple dimensions?
+    bincenter = (bins[1:] + bins[:-1]) / 2.
+    z_spec_digitize = np.digitize(z_spec, bins) # Return the indices of the bins to which each value in input array belongs. 
+    sigmaNMAD_array = np.zeros(shape=bins.shape[0])
+    outFr_array = np.zeros(shape=bins.shape[0])
+    
+    for ind in range(bins.shape[0] - 1): # index: where do we fit in the digitized space?
+        z_spec_bin_z =  z_spec[ z_spec_digitize  == ind + 1] # Why is it + 1?
+        z_pho_bin_z =  z_pho[ z_spec_digitize  == ind + 1]
+        if len(z_spec_digitize[z_spec_digitize == ind + 1]) > 0:
+            sigmaNMAD_array[ind] =  sigmaNMAD(z_spec_bin_z, z_pho_bin_z)
+            outFr_array[ind] = outlierFrac(z_spec_bin_z, z_pho_bin_z, 0.15)
+        else:
+            print("length zero for bin ", ind + 1)
+        
+    return sigmaNMAD_array, outFr_array, bins
+
 def squish_validate(y_test, y_pred_mean): # choose whether to offer a perturbed or original dataset
     z_spec = y_test
     z_pho = y_pred_mean
@@ -211,7 +233,7 @@ def squish_validate(y_test, y_pred_mean): # choose whether to offer a perturbed 
         
     return sigmaNMAD_array, outFr_array, bins
 
-def validate(y_test, sel, new_y_pred_mean): # choose whether to offer a perturbed or original dataset
+def validate_sel(y_test, sel, new_y_pred_mean): # choose whether to offer a perturbed or original dataset
     z_spec = y_test[sel]
     z_pho = new_y_pred_mean
     
@@ -248,6 +270,46 @@ def old_validate(y_test, y_pred_mean, preproc_y): # choose whether to offer a pe
         outFr_array[ind] = outlierFrac(z_spec_bin_z, z_pho_bin_z, 0.15)
         
     return sigmaNMAD_array, outFr_array, bins
+
+#############
+# Plot PDFs #
+#############
+
+def plot_normal_mix(pis, mus, sigmas, ax, label='', color = '', comp=True):
+    """Plots the mixture of Normal models to axis=ax comp=True plots all
+    components of mixture model
+    """
+    x = np.linspace(-0.1, 1.1, 250)
+    final = np.zeros_like(x)
+    for i, (weight_mix, mu_mix, sigma_mix) in enumerate(zip(pis, mus, sigmas)):
+        temp = stats.norm.pdf(x, mu_mix, sigma_mix) * weight_mix
+        final = final + temp
+        if comp:
+            ax.plot(x, temp, 'k--', alpha =0.9)
+        ax.plot(x, final,label=label, color = color)
+        ax.legend(fontsize=13)
+    return final
+
+def plot_pdfs(pred_means,pred_weights,pred_std, y, num_train = 200000, num_test = 20000, num=4, label = '', color = '', train=False, comp = False):
+    np.random.seed(12)
+    nrows = 3
+    fig, axes = plt.subplots(nrows=nrows, ncols=1, sharex = True, figsize=(8, nrows*3), num='pdfs')
+    if train:
+        obj = np.random.randint(0,num_train-1,num)
+    else:
+        obj = np.random.randint(0,num_test-1,num)
+    obj = [42, 30, 80]
+    allfs = []
+    for i in range(len(obj)):
+        print(i)
+        if (i==0):
+            fs = plot_normal_mix(pred_weights[obj][i], pred_means[obj][i], pred_std[obj][i], axes[i], label = label, color = color, comp=comp)
+        else: fs = plot_normal_mix(pred_weights[obj][i], pred_means[obj][i], pred_std[obj][i], axes[i], label = '', color = color, comp=comp)
+        axes[i].set_ylabel(r'${\rm PDF}$', fontsize = 22)
+        allfs.append(fs)
+        axes[i].axvline(x=y[obj][i], color='black', alpha=0.5)
+    plt.xlabel(r'$z_{phot}$', fontsize = 26)
+    return fig, axes
 
 ######################
 # Plot side-by-sides #
@@ -369,7 +431,7 @@ def plot_side_by_sides(y_test, sel, sel_ind, new_y_pred_means, new_y_pred_stds, 
 # Plot sigma or outFrac histograms #
 ####################################
 
-def plot_metric(metric, metric_name, approach, band_n = None, bins = np.linspace(0, 1, 20), save = False, fig = None, ax = None, **kwargs):
+def plot_metric(metric, metric_name, approach = None, band_n = None, bins = np.linspace(0, 1.5, 15), save = False, fig = None, ax = None, **kwargs):
     band_names = ["u-g", "g-r", "r-i", "i-z", "mag(i)"]
     approaches_dict = {'a': "percent increase", 'b': "random numbers (one band)", 'c': "gaussian sampling (one band)", 'd': "gaussian sampling (all bands)"}
     
@@ -379,10 +441,11 @@ def plot_metric(metric, metric_name, approach, band_n = None, bins = np.linspace
     ax.set_xlabel("z bins")
     ax.set_ylabel(metric_name)
     
-    if band_n is None:
-        ax.set_title("Perturbation approach: " + approaches_dict.get(approach))
-    else:
-        ax.set_title("Perturbation approach: " + approaches_dict.get(approach) + ", band " + band_names[band_n])
+    if approach is not None:
+        if band_n is None:
+            ax.set_title("Perturbation approach: " + approaches_dict.get(approach))
+        else:
+            ax.set_title("Perturbation approach: " + approaches_dict.get(approach) + ", band " + band_names[band_n])
     if save:
         fig.savefig(metric_name + "_bins_" + approach + ".png")
     return fig, ax
