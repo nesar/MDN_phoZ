@@ -133,18 +133,19 @@ if use_lindseys_test: # assumes 'des' and 'irac', in that order
         D2 = len(list(irac_bands))
         sim2_bands = irac_bands
         print("End of if")
-        
-    elif sim2 == 'wise':
-        X_train1_subsample = np.delete(X_train1, des_bands['z-y'], axis = 1)
-        X_train2_subsample = np.delete(X_train2, [wise_bands['w3-w2'], wise_bands['w4-w3']], axis = 1)
-        del des_bands['z-y']
-        del wise_bands['w3-w2']
-        del wise_bands['w4-w3']
-        D = len(list(des_bands))
-        D2 = len(list(wise_bands))
-        sim2_bands = wise_bands
+    else:
+        print("Please use des and irac with lindsey's data")
+    # Oops, guess this isn't set up yet
+    #elif sim2 == 'wise':
+    #    X_train1_subsample = np.delete(X_train1, des_bands['z-y'], axis = 1)
+    #    X_train2_subsample = np.delete(X_train2, [wise_bands['w3-w2'], wise_bands['w4-w3']], axis = 1)
+    #    del des_bands['z-y']
+    #    del wise_bands['w3-w2']
+    #    del wise_bands['w4-w3']
+    #    D = len(list(des_bands))
+    #    D2 = len(list(wise_bands))
+    #    sim2_bands = wise_bands
     
-    print("HELLO")
     X_train = np.concatenate((X_train1_subsample, X_train2_subsample), axis = 1)
     y_train = np.concatenate((y_train1, y_train2))
     
