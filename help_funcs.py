@@ -459,7 +459,7 @@ def rm_bad_vals(X_test, X_err, y_test, label_test):
             (X_err[:, 0] > 0 ) &
             (X_err[:, 1] > 0 ) &
             (X_err[:, 2] > 0 ) &
-            (X_err[:, 3] > 0 ) & 
+            (X_err[:, 3] > 0 ) &
             (X_err[:, 4] > 0 ) )
     X_test_new = X_test[mask]
     X_err_new = X_err[mask]
