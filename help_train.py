@@ -56,7 +56,7 @@ def minmax_cutsOBSarr(X, X_err, y, l, mins_and_maxs): # Same, with labels
         (X[:, 0] < max_col[0]) & (X[:, 0] > min_col[0]) &
         (X[:, 1] < max_col[1]) & (X[:, 1] > min_col[1]) &
         (X[:, 2] < max_col[2]) & (X[:, 2] > min_col[2]) &
-        (X[:, 3] < max_col[3]) & (X[:, 3] > min_col[3]) & 
+        (X[:, 3] < max_col[3]) & (X[:, 3] > min_col[3]) &
         (X[:, 4] < max_mag) & (X[:, 4] > min_mag) &
         (y < max_z) & (y > min_z) )
     
