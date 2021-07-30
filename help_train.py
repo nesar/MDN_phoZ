@@ -235,9 +235,6 @@ def loadTrainTest_custom_randz(Testset, sim = 'des', train_dirIn = '/data/a/cpac
     fsps_reshaped = fsps_reshaped[1:, :]
     zz_all_reshaped = zz_reshaped[1:]
     
-    print("X training data shape: ", fsps_reshaped.shape)
-    print("y training data shape: ", zz_all_reshaped.shape)
-    
     # Randomly sample 90% and 10% for training and testing # Should we even bother with this if we're using Lindsey's test data?
     sample_size = fsps_reshaped.shape[0] # first dimension
     train_n = int(frac_train*sample_size) # note: rounds down
@@ -249,6 +246,8 @@ def loadTrainTest_custom_randz(Testset, sim = 'des', train_dirIn = '/data/a/cpac
     X_test = fsps_reshaped[full_idx[~np.isin(full_idx, training_idx)]]  # the indices not part of the subset will be used for testing
     y_test = zz_all_reshaped[full_idx[~np.isin(full_idx, training_idx)]]
     
+    print("X training data shape: ", X_train.shape)
+    print("y training data shape: ", y_train.shape)
     #X_err = np.load(test_dirIn + 'test_' + Testset +'_err.npy')
     #test_labels = np.load(test_dirIn + 'test_' + Testset + '_label.npy')
     

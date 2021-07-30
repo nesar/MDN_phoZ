@@ -30,6 +30,7 @@ train_mode = True
 ########################
 
 import argparse
+print("past imports")
 
 # Create the parser and add arguments
 parser = argparse.ArgumentParser()
@@ -52,7 +53,12 @@ parser.add_argument("-rm_band", dest = "rm_band", default = False, type = bool, 
 parser.add_argument("-sim2", dest='sim2', default = None, type = str, required = False)
 parser.add_argument("-D2", dest='D2', default = None, type = int, required = False)
 parser.add_argument("-use_lindseys_test", dest = "use_lindseys_test", default = False, type = bool, required = False)
+#parser.add_argument("-use_injected_noise", dest = "use_injected_noise", default = False, type = boolean_string, required = False)
+parser.add_argument("-std", dest = "std", default = 0.1, type = float, required = False)
+parser.add_argument("-use_injected_noise", dest = "use_injected_noise", action='store_true')
+parser.set_defaults(use_injected_noise=False)
 
+print("past arg defs")
 # Copy this: python train_ALL_the_all_the_things.py -sim 'jwst' -ntrain 200000 -ntest 20000 -nepochs 20 -K 3 -lr 1e-4 -dr 1e-2 -bs 256 -re False -nbins 200 -spb 400 -prtb False -rm_band False
 
 # This is probably a pretty lazy solution...
@@ -76,6 +82,12 @@ rm_band = args.rm_band
 sim2 = args.sim2
 D2 = args.D2
 use_lindseys_test = args.use_lindseys_test
+use_injected_noise = args.use_injected_noise
+std = args.std
+
+print("past arg parsing")
+
+print("Using injected noise?: ", use_injected_noise)
 
 #######################
 # Constant parameters #
@@ -120,45 +132,54 @@ if use_lindseys_test: # assumes 'des' and 'irac', in that order
     
     # Match training data with Lindsey's code
     if sim2 == 'irac': # COME BACK AND MAKE THIS LESS HARD CODED
-        X_train1_subsample = np.delete(X_train1, des_bands['z-y'], axis = 1)
-        X_train2_subsample = np.delete(X_train2, [irac_bands['I3-I2'], irac_bands['I4-I3']], axis = 1)
-        del des_bands['z-y']
-        del irac_bands['I3-I2'] # How are you going to update those values?
-        del irac_bands['I4-I3']
-        # New band: combine des_mag(g) and irac_mag(i1)
-        irac_bands['mag(g)-mag(I1)'] = len(list(irac_bands)) # One more than the last one
-        new_band = np.array([X_train1_subsample[:,-1] - X_train2_subsample[:,-1]]).T
-        X_train2_subsample = np.concatenate((X_train2_subsample, new_band), axis = 1) # Add new band to the end
-        D = len(list(des_bands))
-        D2 = len(list(irac_bands))
+        if use_injected_noise:
+            print("using injected noise")
+            suffix = suffix + "_noisy_std_" + str(std)
+            X_train = pickle.load( open( b"new_X_train_" + str(std).encode('ascii') + b".obj","rb" ))
+            y_train = pickle.load( open( b"new_y_train_" + str(std).encode('ascii') + b".obj","rb" ))
+            
+        else: 
+            print("not using injected noise")
+            X_train1_subsample = np.delete(X_train1, des_bands['z-y'], axis = 1)
+            X_train2_subsample = np.delete(X_train2, [irac_bands['I3-I2'], irac_bands['I4-I3']], axis = 1)
+            
+            # New band
+            new_band = np.array([X_train1_subsample[:,-1] - X_train2_subsample[:,-1]]).T
+            X_train2_subsample = np.concatenate((X_train2_subsample, new_band), axis = 1) # Add new band to the end
+
+            X_train = np.concatenate((X_train1_subsample, X_train2_subsample), axis = 1)
+            y_train = y_train1
+            
+        # Fix up the dictionaries
+        my_bands = {**des_bands, **irac_bands}
+        del my_bands['z-y']
+        del my_bands['I3-I2'] # How are you going to update those values?
+        del my_bands['I4-I3']
+        my_bands['mag(g)'] -= 1
+        my_bands['I2-I1'] = my_bands['mag(g)'] + 1
+        my_bands['mag(I1)'] = my_bands['I2-I1'] + 1
+        my_bands['mag(g)-mag(I1)'] = len(list(my_bands)) # One more than the last one
+        print("dictionary of bands\n", my_bands)
+
+        # Load testing data
+        X_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/magi_selected_des_irac_combined.npy')
+        y_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/magi_selected_des_irac_z_combined.npy')
+        print("X_test is:\n", X_test)
+
+        # New band for testing too # Not necessary for this file I guess?
+        #new_test_band = np.array([X_test[:, -1] - X_test[:, -3]]).T
+        #X_test = np.concatenate((X_test, new_test_band), axis = 1)
+
+        # Update D
+        #D = len(list(des_bands))
+        #D2 = len(list(irac_bands))
+        #D = D + D2 # Kind of HARD CODE?
+        D = len(list(my_bands))
+        print(D)
         sim2_bands = irac_bands
-        print("End of if")
+        
     else:
         print("Please use des and irac with lindsey's data")
-    # Oops, guess this isn't set up yet
-    #elif sim2 == 'wise':
-    #    X_train1_subsample = np.delete(X_train1, des_bands['z-y'], axis = 1)
-    #    X_train2_subsample = np.delete(X_train2, [wise_bands['w3-w2'], wise_bands['w4-w3']], axis = 1)
-    #    del des_bands['z-y']
-    #    del wise_bands['w3-w2']
-    #    del wise_bands['w4-w3']
-    #    D = len(list(des_bands))
-    #    D2 = len(list(wise_bands))
-    #    sim2_bands = wise_bands
-    
-    X_train = np.concatenate((X_train1_subsample, X_train2_subsample), axis = 1)
-    y_train = np.concatenate((y_train1, y_train2))
-    
-    # Load testing data
-    #X_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/selected_des_irac.npy')
-    #y_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/selected_des_irac_z.npy')
-    X_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/magi_selected_des_irac_combined.npy')
-    y_test = np.load('/data/a/cpac/nramachandra/Projects/phoZ/SurveyTrain/TestingDataLindsey/magi_selected_des_irac_z_combined.npy')
-    print("X_test is:\n", X_test)
-    
-    # Update D
-    D = D + D2 # Kind of HARD CODE?
-    print(D)
     
 else:
     print("Not using Lindsey's test")
@@ -169,7 +190,7 @@ else:
         X_train1, y_train1, X_test1, y_test1 = help_train.loadTrainTest_custom_randz(Testset, sim, train_dirIn, nbands = D, frac_train = frac_train)
         X_train2, y_train2, X_test2, y_test2 = help_train.loadTrainTest_custom_randz(Testset, sim2, train_dirIn, nbands = D2, frac_train = frac_train)
         X_train = np.concatenate((X_train1, X_train2), axis = 1)
-        y_train = np.concatenate((y_train1, y_train2))
+        y_train = y_train1
         X_test = np.concatenate((X_test1, X_test2), axis = 1)
         y_test = y_test1 # They should both be identical
         print(X_train)
@@ -177,6 +198,11 @@ else:
     
 #D = X_train.shape[1] # Hoping to bring this back
 # No shuffling currently I guess? Should we have that again? Here it is...
+
+################
+# Shuffle Data #
+################
+
 X_train, y_train, X_trainShuffleOrder = help_train.shuffle(X_train, y_train) # literally just shuffle the data
 
 ########################################################
@@ -187,7 +213,7 @@ if rm_band:
     D = D - 1 # number of features (in input space)
 
 # Should I add a suffix for "sim" here?
-save_mod = '/data/a/cpac/aurora/MDN_phoZ/saved_hubs/tf2models/'+'Train_'+Trainset+'_lr_'+str(learning_rate)+'_dr'+str(decay_rate)+'_ne'+str(n_epochs)+'_k'+str(K)+'_nt'+str(num_train)
+save_mod = '/data/a/cpac/aurora/MDN_phoZ/saved_hubs/tf2models/'+'Train_'+Trainset+'_lr_'+str(learning_rate)+'_dr'+str(decay_rate)+'_ne'+str(n_epochs)+'_k'+str(K)+'_nt'+str(num_train) + suffix
 
 #################
 # Trim the data #
@@ -204,7 +230,8 @@ save_mod = '/data/a/cpac/aurora/MDN_phoZ/saved_hubs/tf2models/'+'Train_'+Trainse
 #    mins_and_maxs = [min_col, max_col, min_mag, max_mag, min_z, max_z]
 #    X_test, y_test, label_test, mask_cond = help_train.minmax_cutsOBSarr(X_test, y_test, label_test, mins_and_maxs)
     
-minmax = True # HARD CODE
+# Not exactly sure the difference here?
+minmax = False # HARD CODE # False atm because I don't know how to make this work for all training sets (multiple dimensions?)
 if minmax is True:
     min_col = np.min(X_train, axis=0)
     max_col = np.max(X_train, axis=0)
@@ -253,10 +280,11 @@ y_test = preproc_y.transform(y_test.reshape(-1, 1))
 
 if sim2 is None:
     param_labels = ["sim: " + sim, "num train: " + str(num_train), "num test: " + str(num_test), "n epochs: " + str(n_epochs), "D: " + str(D), "K: " + str(K), "learning rate: " + str(learning_rate), "decay rate: " + str(decay_rate), "batch size: " + str(batch_size), "n bins: " + str(n_bins), "select per bin: " + str(select_per_bin)]
+
 else:
     if use_lindseys_test:
         print("Using lindseys test, two sims")
-        param_labels = ["sim1: " + sim, "sim2: " + sim2, "bands: " + str(list(des_bands)) + " " + str(list(sim2_bands)), "num train: " + str(num_train), "num test: " + str(num_test), "n epochs: " + str(n_epochs), "D: " + str(D), "K: " + str(K), "learning rate: " + str(learning_rate), "decay rate: " + str(decay_rate), "batch size: " + str(batch_size), "n bins: " + str(n_bins), "select per bin: " + str(select_per_bin)]
+        param_labels = ["sim1: " + sim, "sim2: " + sim2, "bands: " + str(list(des_bands)) + " " + str(list(sim2_bands)), "num train: " + str(num_train), "num test: " + str(num_test), "n epochs: " + str(n_epochs), "D: " + str(D), "K: " + str(K), "learning rate: " + str(learning_rate), "decay rate: " + str(decay_rate), "batch size: " + str(batch_size), "n bins: " + str(n_bins), "select per bin: " + str(select_per_bin), "noise: " + str(use_injected_noise)]
     else:
         param_labels = ["sim1: " + sim, "sim2: " + sim2, "num train: " + str(num_train), "num test: " + str(num_test), "n epochs: " + str(n_epochs), "D: " + str(D), "K: " + str(K), "learning rate: " + str(learning_rate), "decay rate: " + str(decay_rate), "batch size: " + str(batch_size), "n bins: " + str(n_bins), "select per bin: " + str(select_per_bin)]
 
@@ -276,6 +304,7 @@ fake_lines = [ax.plot([], [], c = "black")[0] for i in range(0,len(param_labels)
 
 ax.legend(handles = fake_lines, labels = param_labels, loc = "upper right")
 ax.add_artist(leg1)
+ax.set_title(sim)
 
 if sim2 is None:
     print("sim2 is none")
@@ -343,16 +372,17 @@ def custom_loss(layer):
         log_likelihood = -1.0*likelihood.log_prob(tf.transpose(y_true)) # A little confusing (talk later)
         mean_loss = tf.reduce_mean(log_likelihood)
 
-        return mean_loss  
+        return mean_loss
     return loss
     
 model_train.add_loss(custom_loss(inputs)(y_true, mu, var, pi))
 model_train.compile(optimizer='Nadam')
 model_train.summary()
 
-##########################
-# Perturb if you want to #
-##########################
+########################################
+# Perturb training data if you want to #
+# (not the same as injecting noise)    #
+########################################
 
 if rm_band:
     band_n = 0 # remove the u band
@@ -380,10 +410,9 @@ if train_mode:
     plt.plot(history.history['val_loss'])
     plt.xlabel('Epochs', fontsize = 28)
     plt.ylabel('Loss', fontsize = 28)
+    plt.title(sim)
     
     # Fancy legend
-    print("before second savefig")
-    
     fake_lines = [plt.plot([], [], c = "black")[0] for i in range(0,len(param_labels))]
     plt.legend(handles = fake_lines, labels = param_labels, loc = "upper right")
 
@@ -421,7 +450,7 @@ y_pred_std = np.sqrt(np.log(y_pred[1, :, :][:, y_pred_arg][:, 0]))
 # Transform back to unscaled space #
 ####################################
 
-# All the same as before
+# Weird because I'm pretty sure none of these get plotted??
 
 y_pred_3means = preproc_y.inverse_transform(y_pred[0, :, :])
 y_pred_3std = preproc_y.inverse_transform( np.sqrt(np.log(y_pred[1, :, :])  ))
@@ -481,6 +510,7 @@ plt.tight_layout()
 
 fake_lines = [ax.plot([], [], c = "black", linestyle = '-')[0] for i in range(0,len(param_labels))]
 ax.legend(handles = fake_lines, labels = param_labels, loc = "upper left")
+ax.set_title(sim)
 
 if prtb:
     ax.set_title("Perturbed")
@@ -510,9 +540,11 @@ for metric, metric_name in zip([sigmaNMAD_array, outFr_array], ["sigma", "outFra
     fake_lines = [ax.plot([], [], c = "black", linestyle = '-')[0] for i in range(0,len(minimal_param_labels))]
     ax.legend(handles = fake_lines, labels = minimal_param_labels, loc = "upper left")
     ax.add_artist(leg1)
-    
+    ax.set_title(sim)
+
     if sim2 is None:
-        fig.savefig("training_plots/" + sim + "/" + sim + "_" + metric_name + ".png")
+        print("sim2 is none")
+        plt.savefig("training_plots/" + sim + "/" + sim + "_" + metric_name + "_ntrain" + str(num_train) + "_ntest" + str(num_test) + "_nepochs" + str(n_epochs) + "_D" + str(D) + "_K" + str(K) + "_lr" + str(learning_rate) + "_dr" + str(decay_rate) + "_bs" + str(batch_size) + "_re" + str(resampleTrain) + "_nbins" + str(n_bins) + "_spb" + str(select_per_bin) + ".png")
     else:
         print("sim2 is not None")
-        fig.savefig("training_plots/" + sim2 + "/" + sim + "_" + sim2 + suffix + "_" + metric_name + ".png")
+        plt.savefig("training_plots/" + sim2 + "/" + sim + "_" + sim2 + suffix + "_" + metric_name + "_ntrain" + str(num_train) + "_ntest" + str(num_test) + "_nepochs" + str(n_epochs) + "_D" + str(D) + "_K" + str(K) + "_lr" + str(learning_rate) + "_dr" + str(decay_rate) + "_bs" + str(batch_size) + "_re" + str(resampleTrain) + "_nbins" + str(n_bins) + "_spb" + str(select_per_bin) + ".png")
