@@ -67,6 +67,7 @@ def pz_error_batch_magnitude(
     feature_error, 
     Nintegral,
     zgrid,
+    zeropoint=None,
 ):
     """Function to calculate the p(z) of a galaxy marginalizing over the feature errors.
     Features are assumed to be: (u-g, g-r, r-i, i-z, i) magnitudes.
@@ -97,17 +98,23 @@ def pz_error_batch_magnitude(
     zgrid : ndarray of shape (n_grid).
         Redshift grid to perform the exact likelihood computation. 
         
+    zeropoint : (n_features, )
+        Zero point shifts that correct the leading order bias between models and data. 
+        
     Returns
     -------
     loglike : ndarray of shape (n_galaxies, )
         The zero point loglikelihood value for each galaxy   
     """
-    
     pz = np.zeros((Nintegral, len(feature), len(zgrid)))
+    
+    if zeropoint is None:
+        zeropoint = np.zeros(feature.shape[1])
+    feature_zp = feature + zeropoint
     
     for i in range(Nintegral):
         print("%d out of %d"%(i, Nintegral))
-        f_real = np.random.normal(feature, feature_error)
+        f_real = np.random.normal(feature_zp, feature_error)
         
         f_real = preproc.transform(f_real)
         y_pred = np.array(model_train(f_real))
@@ -146,6 +153,7 @@ def pz_error_batch_flux(
     feature_error, 
     Nintegral,
     zgrid,
+    zeropoint=None,
 ):
     """Function to calculate the p(z) of a galaxy marginalizing over the feature errors.
     Features are assumed to be: (u-g, g-r, r-i, i-z, i) magnitudes.
@@ -177,6 +185,9 @@ def pz_error_batch_flux(
     zgrid : ndarray of shape (n_grid).
         Redshift grid to perform the exact likelihood computation. 
         
+    zeropoint : (n_features, )
+        Zero point shifts that correct the leading order bias between models and data. 
+        
     Returns
     -------
     loglike : ndarray of shape (n_galaxies, )
@@ -185,7 +196,11 @@ def pz_error_batch_flux(
     
     pz = np.zeros((Nintegral, len(feature), len(zgrid)))
     
-    fluxes, fluxes_err = mag2flux(feature, feature_error)
+    if zeropoint is None:
+        zeropoint = np.zeros(feature.shape[1])
+    feature_zp = feature + zeropoint
+    
+    fluxes, fluxes_err = mag2flux(feature_zp, feature_error)
     
     for i in range(Nintegral):
         print("%d out of %d"%(i, Nintegral))
@@ -247,6 +262,7 @@ def pz_error_batch_flux_QMC(
     feature_error, 
     Nintegral,
     zgrid,
+    zeropoint=None,
 ):
     """Function to calculate the p(z) of a galaxy marginalizing over the feature errors.
     Features are assumed to be: (u-g, g-r, r-i, i-z, i) magnitudes.
@@ -278,6 +294,9 @@ def pz_error_batch_flux_QMC(
     zgrid : ndarray of shape (n_grid).
         Redshift grid to perform the exact likelihood computation. 
         
+    zeropoint : (n_features, )
+        Zero point shifts that correct the leading order bias between models and data. 
+        
     Returns
     -------
     loglike : ndarray of shape (n_galaxies, )
@@ -286,7 +305,11 @@ def pz_error_batch_flux_QMC(
     
     pz = np.zeros((Nintegral, len(feature), len(zgrid)))
     
-    fluxes, fluxes_err = mag2flux(feature, feature_error)
+    if zeropoint is None:
+        zeropoint = np.zeros(feature.shape[1])
+    feature_zp = feature + zeropoint
+    
+    fluxes, fluxes_err = mag2flux(feature_zp, feature_error)
     
     samples = get_normal_qmc_samples(fluxes, fluxes_err, Nintegral)
     
