@@ -370,6 +370,7 @@ def pz_error_batch_flux_QMC_zperror(
     and then converted to (u-g, g-r, r-i, i-z, i) space.
     Calculates p(z|f) = sum_F p(F|f) * p(z|F) by drawing from p(F|f),
     calculating p(z|F) with MDN, and summing the importance sampled F points.
+    This function has the ability to add in quadrature an additional error to the measured flux errors. This error takes into account residual errors between the model and data due to incorrect model or incorrect data calibration.
     
     Parameters
     ----------
