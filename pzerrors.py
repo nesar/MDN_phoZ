@@ -351,3 +351,112 @@ def pz_error_batch_flux_QMC(
     pz /= sum_pz
     
     return pz
+
+
+def pz_error_batch_flux_QMC_zperror(
+    preproc, 
+    preproc_y, 
+    model_train, 
+    feature, 
+    feature_error, 
+    Nintegral,
+    zgrid,
+    zeropoint=None,
+    zeropoint_error=None,
+):
+    """Function to calculate the p(z) of a galaxy marginalizing over the feature errors.
+    Features are assumed to be: (u-g, g-r, r-i, i-z, i) magnitudes.
+    The errors are sampled from 5 independent Gaussians in (u, g, r, i, z) space 
+    and then converted to (u-g, g-r, r-i, i-z, i) space.
+    Calculates p(z|f) = sum_F p(F|f) * p(z|F) by drawing from p(F|f),
+    calculating p(z|F) with MDN, and summing the importance sampled F points.
+    
+    Parameters
+    ----------
+    preproc : callable
+        Rescaling function for magnitudes and colors.
+        
+    preproc_y : callable
+        Rescaling function for redshift.
+        
+    model_train : callable
+        MDN trained network.
+        
+    feature : ndarray of shape (n_galaxies, n_features)
+        Array with the input features.
+        
+    feature_error : ndarray of shape (n_galaxies, n_features)
+        Array with the error of the input features.    
+    
+    Nintegral : int
+        Number of samples to integrate the photometric noise. 
+        
+    zgrid : ndarray of shape (n_grid).
+        Redshift grid to perform the exact likelihood computation. 
+        
+    zeropoint : (n_features, )
+        Zero point shifts that correct the leading order bias between models and data. 
+
+    zeropoint_error : (n_features, )
+        Fractional residual error in flux space relative to the measured flux. This could be due to zero-point error in the measurement of fluxes, or residual inconsisntencies between models and data.
+        
+    Returns
+    -------
+    loglike : ndarray of shape (n_galaxies, )
+        The zero point loglikelihood value for each galaxy   
+    """
+    
+    pz = np.zeros((Nintegral, len(feature), len(zgrid)))
+    
+    if zeropoint is None:
+        zeropoint = np.zeros(feature.shape[1])
+        
+    if zeropoint_error is None:
+        zeropoint_error = np.zeros(feature.shape[1])
+        
+    feature_zp = feature + zeropoint
+    
+    fluxes, fluxes_err = mag2flux(feature_zp, feature_error)
+    
+    fluxes_err = np.sqrt(fluxes_err ** 2 + (abs(fluxes) * zeropoint_error) **2)
+    
+    samples = get_normal_qmc_samples(fluxes, fluxes_err, Nintegral)
+    
+    for i in range(Nintegral):
+        print("%d out of %d"%(i, Nintegral))
+        fluxes_real = samples[i]
+        fluxes_real = np.where(
+            fluxes_real > 0.0, 
+            fluxes_real, 
+            fluxes * 10**(-0.4 * 1)
+        )
+        
+        f_real = flux2mag(fluxes_real, fluxes_err)[0]
+        
+        f_real = preproc.transform(f_real)
+        y_pred = np.array(model_train(f_real))
+        
+        weight = y_pred[2]
+        mu = y_pred[0]
+        sig = np.sqrt(np.log(y_pred[1]))
+
+        mu = preproc_y.inverse_transform(mu)
+        sig = preproc_y.inverse_transform(sig)
+        sig = np.clip(sig,0.001, np.inf)
+        
+        zipped = zip(mu.T, 
+                 sig.T, 
+                 weight.T)
+        
+        pzsub = np.sum([gaussian_vect(zgrid, m,s,w) for (m,s,w) in zipped], axis=0).T
+        sum_pz = np.sum(pzsub,axis=1)[:,None]
+        sum_pz[sum_pz==0] = 1.
+        pzsub /= sum_pz
+        pz[i] = pzsub
+        
+    pz = np.sum(pz,axis=0)
+    sum_pz = np.sum(pz,axis=1)[:,None]
+    sum_pz[sum_pz==0] = 1.
+    pz /= sum_pz
+    
+    return pz
